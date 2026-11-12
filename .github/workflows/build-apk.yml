@@ -1,4 +1,4 @@
-name: Build SmartClaw APK
+﻿name: Build SmartClaw APK
 on:
   workflow_dispatch:
   push:
@@ -22,9 +22,10 @@ jobs:
         working-directory: android
         env:
           ACCEPT_ANDROID_SDK_LICENSE: '1'
-        run: /tmp/buildenv/bin/buildozer -v android debug
+        run: PATH=/tmp/buildenv/bin:$PATH /tmp/buildenv/bin/buildozer -v android debug
       - uses: actions/upload-artifact@v4
         with:
           name: SmartClaw-debug-apk
           path: android/bin/*.apk
           if-no-files-found: error
+
