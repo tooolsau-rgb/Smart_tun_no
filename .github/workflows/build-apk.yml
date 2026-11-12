@@ -1,0 +1,30 @@
+name: Build SmartClaw APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['android/**', '.github/workflows/build-apk.yml']
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip python3-venv autoconf automake libtool pkg-config zlib1g-dev libffi-dev libssl-dev cmake libncurses-dev
+      - name: Install Buildozer
+        run: |
+          python3 -m venv /tmp/buildenv
+          /tmp/buildenv/bin/pip install --upgrade pip setuptools wheel
+          /tmp/buildenv/bin/pip install buildozer cython==0.29.34
+      - name: Build APK
+        working-directory: android
+        env:
+          ACCEPT_ANDROID_SDK_LICENSE: '1'
+        run: /tmp/buildenv/bin/buildozer -v android debug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SmartClaw-debug-apk
+          path: android/bin/*.apk
+          if-no-files-found: error
