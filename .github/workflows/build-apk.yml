@@ -59,7 +59,7 @@ jobs:
         run: |
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
 
-          test -f "$SDKMANAGER"
+          test -x "$SDKMANAGER"
 
           yes | "$SDKMANAGER" --licenses || true
 
@@ -69,6 +69,18 @@ jobs:
             "build-tools;37.0.0"
 
           test -f "$ANDROID_HOME/build-tools/37.0.0/aidl"
+
+      - name: Fix sdkmanager compatibility
+        run: |
+          SDK="$ANDROID_HOME"
+
+          sudo mkdir -p "$SDK/tools/bin"
+
+          sudo ln -sfn \
+            "$SDK/cmdline-tools/latest/bin/sdkmanager" \
+            "$SDK/tools/bin/sdkmanager"
+
+          test -x "$SDK/tools/bin/sdkmanager"
 
       - name: Configure Buildozer SDK
         working-directory: android
