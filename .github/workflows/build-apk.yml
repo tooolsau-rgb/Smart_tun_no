@@ -4,7 +4,8 @@ name: Build SmartClaw APK
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - 'android/**'
       - '.github/workflows/build-apk.yml'
@@ -36,6 +37,22 @@ jobs:
             setuptools wheel
 
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Accept Android SDK licenses
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+
+          yes | "$SDKMANAGER" --licenses || true
+
+          "$SDKMANAGER" --install \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;37.0.0"
+
+          test -f "$ANDROID_HOME/build-tools/37.0.0/aidl"
 
       - name: Build APK
         working-directory: android
