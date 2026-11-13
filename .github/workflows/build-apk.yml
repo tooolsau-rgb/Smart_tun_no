@@ -13,6 +13,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      PIP_BREAK_SYSTEM_PACKAGES: '1'
+      ACCEPT_ANDROID_SDK_LICENSE: '1'
 
     steps:
       - name: Checkout source
@@ -26,24 +33,33 @@ jobs:
             python3-pip python3-venv \
             autoconf automake libtool pkg-config \
             zlib1g-dev libffi-dev libssl-dev \
-            cmake libncurses-dev
+            cmake libncurses-dev \
+            libsqlite3-dev liblzma-dev \
+            libbz2-dev libreadline-dev \
+            libgdbm-dev
+
+      - name: Configure Java 17
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_17_X64/bin" >> "$GITHUB_PATH"
 
       - name: Install Buildozer
         run: |
           python3 -m pip install --user \
             --break-system-packages \
             --ignore-installed \
-            buildozer cython==0.29.34 \
-            setuptools wheel
+            buildozer \
+            cython==0.29.34 \
+            setuptools \
+            wheel
 
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Accept Android SDK licenses
-        env:
-          ANDROID_HOME: /usr/local/lib/android/sdk
-          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: |
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+
+          test -f "$SDKMANAGER"
 
           yes | "$SDKMANAGER" --licenses || true
 
@@ -54,11 +70,23 @@ jobs:
 
           test -f "$ANDROID_HOME/build-tools/37.0.0/aidl"
 
+      - name: Configure Buildozer SDK
+        working-directory: android
+        run: |
+          test -f buildozer.spec
+
+          sed -i \
+            '/^[[:space:]]*android.sdk_path[[:space:]]*=/d' \
+            buildozer.spec
+
+          sed -i \
+            '/^\[app\]/a android.sdk_path = /usr/local/lib/android/sdk' \
+            buildozer.spec
+
+          grep '^android.sdk_path' buildozer.spec
+
       - name: Build APK
         working-directory: android
-        env:
-          ACCEPT_ANDROID_SDK_LICENSE: '1'
-          PIP_BREAK_SYSTEM_PACKAGES: '1'
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           buildozer -v android debug
